@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Django Channels Chat</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 h-screen flex items-center justify-center">
+  <div class="w-full max-w-md p-6 bg-white shadow-xl rounded-xl space-y-4">
+    <h1 class="text-2xl font-bold text-center">💬 Django WebSocket Chat</h1>
+
+    <div id="chat-box" class="h-64 overflow-y-auto border p-2 bg-gray-50 rounded text-sm">
+      <p class="text-gray-400 italic">Connecting...</p>
+    </div>
+
+    <form id="chat-form" class="flex gap-2">
+      <input
+        id="message-input"
+        type="text"
+        placeholder="Type a message..."
+        class="flex-1 p-2 border rounded"
+        autocomplete="off"
+      />
+      <button
+        type="submit"
+        class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+      >
+        Send
+      </button>
+    </form>
+  </div>
+
+  <script>
+    const chatBox = document.getElementById("chat-box");
+    const chatForm = document.getElementById("chat-form");
+    const messageInput = document.getElementById("message-input");
+
+    const socket = new WebSocket("ws://" + window.location.host + "/ws/chat/");
+
+    socket.onopen = () => {
+      appendMessage("✅ Connected to chat");
+    };
+
+    socket.onmessage = (e) => {
+      const data = JSON.parse(e.data);
+      appendMessage("💬 " + data.message);
+    };
+
+    socket.onclose = () => {
+      appendMessage("❌ Chat disconnected");
+    };
+
+    chatForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const message = messageInput.value.trim();
+      if (message !== "") {
+        socket.send(JSON.stringify({ message }));
+        messageInput.value = "";
+      }
+    });
+
+    function appendMessage(text) {
+      const p = document.createElement("p");
+      p.textContent = text;
+      chatBox.appendChild(p);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+  </script>
+</body>
+</html>
