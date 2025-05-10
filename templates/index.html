@@ -1,71 +1,63 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Django Channels Chat</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+    <title>Real-Time Location Tracker</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map { height: 600px; }
+    </style>
 </head>
-<body class="bg-gray-100 h-screen flex items-center justify-center">
-  <div class="w-full max-w-md p-6 bg-white shadow-xl rounded-xl space-y-4">
-    <h1 class="text-2xl font-bold text-center">💬 Django WebSocket Chat</h1>
+<body>
+    <h2>Driver Live Tracker</h2>
+    <div id="map"></div>
 
-    <div id="chat-box" class="h-64 overflow-y-auto border p-2 bg-gray-50 rounded text-sm">
-      <p class="text-gray-400 italic">Connecting...</p>
-    </div>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        // Initial map setup with a central location (default to Kathmandu)
+        const map = L.map('map').setView([27.7172, 85.3240], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-    <form id="chat-form" class="flex gap-2">
-      <input
-        id="message-input"
-        type="text"
-        placeholder="Type a message..."
-        class="flex-1 p-2 border rounded"
-        autocomplete="off"
-      />
-      <button
-        type="submit"
-        class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-      >
-        Send
-      </button>
-    </form>
-  </div>
+        let marker = null;  // Marker for the user’s location
 
-  <script>
-    const chatBox = document.getElementById("chat-box");
-    const chatForm = document.getElementById("chat-form");
-    const messageInput = document.getElementById("message-input");
+        // === ✅ Dynamic WebSocket URL based on where the page is loaded from ===
+        const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
+        const socket = new WebSocket(`${wsProtocol}://${window.location.host}/ws/location/`);
 
-    const socket = new WebSocket("ws://" + window.location.host + "/ws/chat/");
+        socket.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            const { latitude, longitude } = data;
 
-    socket.onopen = () => {
-      appendMessage("✅ Connected to chat");
-    };
+            if (marker) {
+                marker.setLatLng([latitude, longitude]);
+            } else {
+                marker = L.marker([latitude, longitude]).addTo(map);
+            }
 
-    socket.onmessage = (e) => {
-      const data = JSON.parse(e.data);
-      appendMessage("💬 " + data.message);
-    };
+            map.setView([latitude, longitude], 18);  // Zoom in on new location
+        };
+    </script>
 
-    socket.onclose = () => {
-      appendMessage("❌ Chat disconnected");
-    };
+    <script>
+        // Function to send current location to the Django backend
+        function sendLocation(position) {
+            fetch('/api/send-location/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    driver_id: 'driver_1',
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude
+                })
+            }).catch(error => console.error('Location send failed:', error));
+        }
 
-    chatForm.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const message = messageInput.value.trim();
-      if (message !== "") {
-        socket.send(JSON.stringify({ message }));
-        messageInput.value = "";
-      }
-    });
-
-    function appendMessage(text) {
-      const p = document.createElement("p");
-      p.textContent = text;
-      chatBox.appendChild(p);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-  </script>
+        // Update and send location every 3 seconds
+        setInterval(() => {
+            navigator.geolocation.getCurrentPosition(sendLocation);
+        }, 3000);
+    </script>
 </body>
 </html>

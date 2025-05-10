@@ -1,0 +1,73 @@
+version: "3.8"
+
+services:
+  # Django service
+  web:
+    build:
+      context: .
+    container_name: django_app
+    ports:
+      - "8000:8000"  # Expose Daphne on port 8000
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - REDIS_URL=redis://redis:6379/0  # Redis URL for channel layer
+    volumes:
+      - .:/app
+    networks:
+      - app-network
+    depends_on:
+      - kafka
+      - zookeeper
+      - redis
+
+  # Nginx service
+  nginx:
+    build: ./nginx  # Build Nginx image from the local Nginx folder
+    container_name: nginx
+    ports:
+      - "80:80"  # Expose Nginx on port 80
+    depends_on:
+      - web
+    networks:
+      - app-network
+
+  # Zookeeper service (required for Kafka)
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      - ZOOKEEPER_CLIENT_PORT=2181
+    networks:
+      - app-network
+
+    # Kafka service (using confluentinc/cp-kafka)
+  kafka:
+    image: confluentinc/cp-kafka:7.0.1
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_LISTENER_SECURITY_PROTOCOL=PLAINTEXT
+      - KAFKA_LISTENER_PORT=9092
+      - KAFKA_LISTENER_NAME=PLAINTEXT
+      - KAFKA_LISTENER_SSL_PORT=9093
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+    networks:
+      - app-network
+
+  # Redis service (used for Channels layer)
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"  # Expose Redis on port 6379
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
