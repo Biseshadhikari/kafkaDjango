@@ -26,10 +26,15 @@ services:
     container_name: nginx
     ports:
       - "80:80"  # Expose Nginx on port 80
+      - "443:443"  # Expose Nginx on port 443 (for HTTPS)
     depends_on:
       - web
     networks:
       - app-network
+    volumes:
+      # Mount SSL certificates from the host machine into the container
+      - /etc/letsencrypt/live/bisesh.xyz:/etc/nginx/ssl:ro  # SSL certificates path (adjust based on your Certbot setup)
+      - ./nginx.conf:/etc/nginx/nginx.conf  # Make sure your Nginx config is correct
 
   # Zookeeper service (required for Kafka)
   zookeeper:
@@ -42,7 +47,7 @@ services:
     networks:
       - app-network
 
-    # Kafka service (using confluentinc/cp-kafka)
+  # Kafka service (using confluentinc/cp-kafka)
   kafka:
     image: confluentinc/cp-kafka:7.0.1
     container_name: kafka
