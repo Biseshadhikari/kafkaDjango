@@ -17,7 +17,7 @@
         let marker = null;
 
         const socket = new WebSocket(
-            `ws://${window.location.host}/ws/location/{{ driver_id }}/`
+            `wss://${window.location.host}/ws/location/{{ driver_id }}/`
         );
 
         socket.onmessage = function(event) {
