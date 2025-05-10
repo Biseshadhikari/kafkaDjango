@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Join Live Tracking</title>
+</head>
+<body>
+    <h2>Enter Your Name</h2>
+    <input type="text" id="driverName" placeholder="e.g., bisesh" />
+    <button onclick="startTracking()">Start Sending Location</button>
+
+    <script>
+        function startTracking() {
+            const driverId = document.getElementById('driverName').value;
+            if (!driverId) return alert("Name is required");
+
+            // Start sending location
+            setInterval(() => {
+                navigator.geolocation.getCurrentPosition((position) => {
+                    fetch('/api/send-location/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            driver_id: driverId,
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude
+                        })
+                    });
+                });
+            }, 3000);
+
+            alert("Now sending your location. Share /location/" + driverId + " to be tracked!");
+        }
+    </script>
+</body>
+</html>

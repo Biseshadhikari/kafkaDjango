@@ -1,8 +1,8 @@
 from kafka import KafkaConsumer
-import json
-import threading
-from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+import threading
+import json
 
 def start_kafka_consumer():
     consumer = KafkaConsumer(
@@ -13,11 +13,16 @@ def start_kafka_consumer():
     channel_layer = get_channel_layer()
 
     for message in consumer:
+        data = message.value
+        driver_id = data.get("driver_id")
+        if not driver_id:
+            continue
+
         async_to_sync(channel_layer.group_send)(
-            "locations",
+            f"location_{driver_id}",
             {
                 "type": "send_location",
-                "data": message.value
+                "data": data
             }
         )
 

@@ -16,11 +16,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from core.views import *
+from core import views
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('',index),
-    path('api/send-location/', send_location),
+    path('', views.home, name='home'),
+    path('location/<str:driver_id>/', views.track_driver, name='track_driver'),
+    path('api/send-location/', views.send_location),
 
     
 ]
