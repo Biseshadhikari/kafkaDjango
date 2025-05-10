@@ -32,9 +32,11 @@ services:
     networks:
       - app-network
     volumes:
-      # Mount SSL certificates from the host machine into the container
-      - /etc/letsencrypt/live/bisesh.xyz:/etc/nginx/ssl:ro  # SSL certificates path (adjust based on your Certbot setup)
-      - ./nginx.conf:/etc/nginx/nginx.conf  # Make sure your Nginx config is correct
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro  # Mount nginx.conf file
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro  # Mount default.conf file
+      # Mount SSL certificates
+      - /etc/letsencrypt/live/bisesh.xyz/fullchain.pem:/etc/letsencrypt/live/bisesh.xyz/fullchain.pem:ro
+      - /etc/letsencrypt/live/bisesh.xyz/privkey.pem:/etc/letsencrypt/live/bisesh.xyz/privkey.pem:ro
 
   # Zookeeper service (required for Kafka)
   zookeeper:
